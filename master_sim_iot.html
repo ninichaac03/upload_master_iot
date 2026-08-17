@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <title>SIM IoT</title>
+    <link rel="stylesheet" href="master_sim_iot.css">
+</head>
+
+<body>
+    <div id="srApp">
+        <div class="wrap">
+
+            <div class="hero">
+                <div>
+                    <h1>Store Machine Registry</h1>
+                    <div class="sub">SharePoint → database, coffee machine store mapping</div>
+                </div>
+                <div class="stat">
+                    <div class="num" id="srCount">0</div>
+                    <div class="lbl">records stored</div>
+                </div>
+            </div>
+
+            <section>
+                <div class="section-head">
+                    <span class="tag">1</span>
+                    <h2>Field mapping</h2>
+                </div>
+                <div class="field-map">
+                    <div class="src">Brand</div>
+                    <div class="arrow">→</div>
+                    <div class="dst">BRAND <span>(ALL CAFÉ=0, ALL SELECT=1)</span></div>
+                    <div class="src">สูตร (Recipe)</div>
+                    <div class="arrow">→</div>
+                    <div class="dst">RECIPE <span>(ALL CAFÉ=0, ALL SELECT=1)</span></div>
+                    <div class="src">Store Code3</div>
+                    <div class="arrow">→</div>
+                    <div class="dst">BRANCH_CODE</div>
+                    <div class="src">Store Name</div>
+                    <div class="arrow">→</div>
+                    <div class="dst">BRANCH_NAME</div>
+                    <div class="src">หมายเลขซิม</div>
+                    <div class="arrow">→</div>
+                    <div class="dst">SIM_NUMBER</div>
+                    <div class="src">SN เครื่องชงกาแฟ</div>
+                    <div class="arrow">→</div>
+                    <div class="dst">BOARD_CODE</div>
+                    <div class="src">—</div>
+                    <div class="arrow">→</div>
+                    <div class="dst">COFFEE_SIM_ID <span>(auto-increment, assigned on import)</span></div>
+                    <div class="src">—</div>
+                    <div class="arrow">→</div>
+                    <div class="dst">CREATED_AT <span>(timestamp, set on import)</span></div>
+                </div>
+            </section>
+
+            <section>
+                <div class="section-head">
+                    <span class="tag">2</span>
+                    <h2>Upload file</h2>
+                </div>
+                <div class="drop" id="srDrop">
+                    <div class="icon">⇪</div>
+                    <div class="main"><b>Click to upload</b> or drag an .xlsx / .csv file here</div>
+                    <div class="hint">exported from SharePoint list</div>
+                    <input type="file" id="srFile" accept=".xlsx,.xls,.csv">
+                </div>
+                <div class="status" id="srStatus"></div>
+            </section>
+
+            <section>
+                <div class="section-head">
+                    <span class="tag">3</span>
+                    <h2>Data</h2>
+                </div>
+                <div class="row-actions">
+                    <input class="search" id="srSearch" placeholder="Search branch code, name, SIM, board code…">
+                    <button class="btn" id="srExportCsv">Export CSV</button>
+                    <button class="btn" id="srExportJson">Export JSON</button>
+                    <button class="btn ghost" id="srRefresh">Refresh</button>
+                </div>
+                <div class="table-wrap">
+                    <table id="srDbTable"></table>
+                </div>
+            </section>
+
+        </div>
+    </div>
+
+    <script src="master_sim_iot.js"></script>
+</body>
+
+</html>

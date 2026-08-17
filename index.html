@@ -1,0 +1,420 @@
+<!-- Store Machine Registry — upload SharePoint export, map fields, store to database -->
+<style>
+  :root{
+    --bg:#ffffff;
+    --surface:#fafafa;
+    --surface2:#f4f4f5;
+    --border:#e6e6e9;
+    --text:#18181b;
+    --muted:#8a8a92;
+    --accent:#18181b;
+    --accent-soft:#f4f4f5;
+    --good:#1f9d6c;
+    --good-bg:#e9f8f1;
+    --brand:#2563eb;
+    --brand-bg:#eef2ff;
+    --bad:#d84b3f;
+    --bad-bg:#fdeeec;
+    --mono:'IBM Plex Mono','SF Mono',Consolas,monospace;
+    --sans:'Inter',system-ui,-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  #srApp{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    min-height:100%;
+    -webkit-font-smoothing:antialiased;
+  }
+  #srApp .wrap{max-width:1040px;margin:0 auto;padding:48px 28px 90px;}
+
+  #srApp .hero{
+    display:flex;justify-content:space-between;align-items:flex-end;
+    padding-bottom:24px;margin-bottom:36px;flex-wrap:wrap;gap:14px;
+    border-bottom:1px solid var(--border);
+  }
+  #srApp .hero h1{
+    font-size:21px;font-weight:600;letter-spacing:-0.015em;margin:0 0 5px;
+  }
+  #srApp .hero .sub{color:var(--muted);font-size:13px;}
+  #srApp .hero .stat{text-align:right;}
+  #srApp .hero .stat .num{font-size:26px;color:var(--text);font-weight:700;line-height:1;letter-spacing:-0.02em;}
+  #srApp .hero .stat .lbl{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.07em;margin-top:5px;}
+
+  #srApp section{margin-bottom:36px;}
+  #srApp .section-head{
+    display:flex;align-items:center;gap:9px;margin-bottom:16px;
+  }
+  #srApp .section-head .tag{
+    font-size:11px;color:var(--muted);
+    border:1px solid var(--border);border-radius:20px;padding:3px 9px;
+    letter-spacing:.02em;
+  }
+  #srApp .section-head h2{font-size:14.5px;margin:0;font-weight:600;}
+
+  #srApp .drop{
+    border:1.5px dashed var(--border);border-radius:14px;
+    padding:38px 20px;text-align:center;cursor:pointer;
+    transition:border-color .15s,background .15s;background:var(--surface);
+  }
+  #srApp .drop:hover, #srApp .drop.drag{border-color:var(--accent);background:var(--surface2);}
+  #srApp .drop .icon{
+    width:34px;height:34px;margin:0 auto 12px;border-radius:50%;background:var(--surface2);
+    display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--muted);
+  }
+  #srApp .drop .main{font-size:14px;margin-bottom:4px;color:var(--text);}
+  #srApp .drop .main b{font-weight:600;text-decoration:underline;text-underline-offset:2px;}
+  #srApp .drop .hint{font-size:12px;color:var(--muted);}
+  #srApp input[type=file]{display:none;}
+
+  #srApp .status{
+    font-size:12.5px;padding:11px 14px;border-radius:8px;margin-top:12px;
+    display:none;
+  }
+  #srApp .status.show{display:block;}
+  #srApp .status.err{background:var(--bad-bg);color:var(--bad);}
+  #srApp .status.ok{background:var(--good-bg);color:var(--good);}
+  #srApp .status.info{background:var(--surface2);color:var(--muted);}
+
+  #srApp table{width:100%;border-collapse:collapse;font-size:13px;}
+  #srApp thead th{
+    text-align:left;font-size:10.5px;text-transform:uppercase;
+    letter-spacing:.06em;color:var(--muted);padding:10px 12px;border-bottom:1px solid var(--border);
+    white-space:nowrap;background:var(--surface);position:sticky;top:0;
+  }
+  #srApp tbody td{
+    padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;
+    white-space:nowrap;color:var(--text);
+  }
+  #srApp tbody td.mono{font-family:var(--mono);font-size:12.5px;color:#3f3f46;}
+  #srApp tbody tr:hover{background:var(--surface);}
+  #srApp .table-wrap{border:1px solid var(--border);border-radius:12px;overflow:auto;max-height:440px;background:var(--bg);}
+
+  #srApp .chip{
+    display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;
+    font-weight:600;letter-spacing:.01em;
+  }
+  #srApp .chip.select{background:var(--brand-bg);color:var(--brand);}
+  #srApp .chip.cafe{background:var(--good-bg);color:var(--good);}
+
+  #srApp .row-actions{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
+  #srApp .btn{
+    font-family:var(--sans);font-size:13px;font-weight:600;padding:9px 16px;border-radius:8px;
+    border:1px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer;
+    transition:border-color .15s,background .15s;
+  }
+  #srApp .btn:hover{border-color:#c9c9ce;background:var(--surface);}
+  #srApp .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+  #srApp .btn.primary:hover{background:#000;}
+  #srApp .btn:disabled{opacity:.4;cursor:not-allowed;}
+  #srApp .btn.ghost{background:transparent;border-color:transparent;color:var(--muted);}
+  #srApp .btn.ghost:hover{color:var(--text);background:var(--surface);}
+
+  #srApp .search{
+    flex:1;min-width:200px;background:var(--bg);border:1px solid var(--border);
+    border-radius:8px;padding:9px 13px;color:var(--text);font-size:13px;
+  }
+  #srApp .search:focus{outline:none;border-color:var(--accent);}
+  #srApp .search::placeholder{color:var(--muted);}
+
+  #srApp .del-btn{
+    background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:4px 7px;
+    border-radius:6px;
+  }
+  #srApp .del-btn:hover{color:var(--bad);background:var(--bad-bg);}
+
+  #srApp .empty{
+    text-align:center;padding:46px 20px;color:var(--muted);font-size:13px;
+  }
+  #srApp .note{
+    font-size:12px;color:var(--muted);margin-top:10px;line-height:1.6;
+  }
+  #srApp .field-map{
+    display:grid;grid-template-columns:1fr auto 1fr;gap:9px 16px;font-size:13px;
+    background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px;
+  }
+  #srApp .field-map .src{color:var(--muted);}
+  #srApp .field-map .arrow{color:#c9c9ce;}
+  #srApp .field-map .dst{color:var(--text);font-weight:600;}
+  #srApp .field-map .dst span{color:var(--muted);font-weight:400;}
+</style>
+
+<div id="srApp">
+  <div class="wrap">
+
+    <div class="hero">
+      <div>
+        <h1>Store Machine Registry</h1>
+        <div class="sub">SharePoint → database, coffee machine store mapping</div>
+      </div>
+      <div class="stat">
+        <div class="num" id="srCount">0</div>
+        <div class="lbl">records stored</div>
+      </div>
+    </div>
+
+    <section>
+      <div class="section-head">
+        <span class="tag">1</span>
+        <h2>Field mapping</h2>
+      </div>
+      <div class="field-map">
+        <div class="src">Brand</div><div class="arrow">→</div><div class="dst">BRAND <span>(ALL CAFÉ=0, ALL SELECT=1)</span></div>
+        <div class="src">สูตร (Recipe)</div><div class="arrow">→</div><div class="dst">RECIPE <span>(ALL CAFÉ=0, ALL SELECT=1)</span></div>
+        <div class="src">Store Code3</div><div class="arrow">→</div><div class="dst">BRANCH_CODE</div>
+        <div class="src">Store Name</div><div class="arrow">→</div><div class="dst">BRANCH_NAME</div>
+        <div class="src">หมายเลขซิม</div><div class="arrow">→</div><div class="dst">SIM_NUMBER</div>
+        <div class="src">SN เครื่องชงกาแฟ</div><div class="arrow">→</div><div class="dst">BOARD_CODE</div>
+        <div class="src">—</div><div class="arrow">→</div><div class="dst">COFFEE_SIM_ID <span>(auto-increment, assigned on import)</span></div>
+        <div class="src">—</div><div class="arrow">→</div><div class="dst">CREATED_AT <span>(timestamp, set on import)</span></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <span class="tag">2</span>
+        <h2>Upload file</h2>
+      </div>
+      <div class="drop" id="srDrop">
+        <div class="icon">⇪</div>
+        <div class="main"><b>Click to upload</b> or drag an .xlsx / .csv file here</div>
+        <div class="hint">exported from SharePoint list</div>
+        <input type="file" id="srFile" accept=".xlsx,.xls,.csv">
+      </div>
+      <div class="status" id="srStatus"></div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <span class="tag">3</span>
+        <h2>Data</h2>
+      </div>
+      <div class="row-actions">
+        <input class="search" id="srSearch" placeholder="Search branch code, name, SIM, board code…">
+        <button class="btn" id="srExportCsv">Export CSV</button>
+        <button class="btn" id="srExportJson">Export JSON</button>
+        <button class="btn ghost" id="srRefresh">Refresh</button>
+      </div>
+      <div class="table-wrap"><table id="srDbTable"></table></div>
+      <div class="note" id="srStorageNote">Uploads are imported straight into your MySQL database through the PHP API in the api/ folder — no manual export/import step. Everyone hitting the same site sees the same data.</div>
+    </section>
+
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+(function(){
+  const $ = (sel) => document.querySelector(sel);
+  const dropEl = $('#srDrop');
+  const fileEl = $('#srFile');
+  const statusEl = $('#srStatus');
+  const dbTable = $('#srDbTable');
+  const countEl = $('#srCount');
+  const searchEl = $('#srSearch');
+
+  let allRecords = [];
+
+  // PHP backend endpoints. This file is expected to sit next to an /api folder
+  // containing import.php, list.php and delete.php (see the files provided
+  // alongside this one). Adjust API_BASE if you host the api/ folder elsewhere.
+  const API_BASE = 'api/';
+
+  function showStatus(msg, type){
+    statusEl.textContent = msg;
+    statusEl.className = 'status show ' + type;
+  }
+  function hideStatus(){ statusEl.className = 'status'; }
+
+  function normBrandValue(raw){
+    const s = (raw || '').toString().trim().toUpperCase();
+    if (s.includes('SELECT')) return 1;
+    return 0; // default / ALL CAFE
+  }
+
+  function findHeader(headers, target){
+    const clean = (h) => (h||'').toString().replace(/\s+/g,'').trim();
+    const t = clean(target);
+    for (const h of headers){ if (clean(h) === t) return h; }
+    for (const h of headers){ if (clean(h).includes(t) || t.includes(clean(h))) return h; }
+    return null;
+  }
+
+  function mapRow(row, headers){
+    const col = {};
+    col.brand   = findHeader(headers, 'Brand');
+    col.recipe  = findHeader(headers, 'สูตร');
+    col.code3   = findHeader(headers, 'StoreCode3');
+    col.name    = findHeader(headers, 'StoreName');
+    col.sim     = findHeader(headers, 'หมายเลขซิม');
+    col.board   = findHeader(headers, 'SNเครื่องชงกาแฟ');
+
+    const branchCode = col.code3 ? (row[col.code3] || '').toString().trim() : '';
+    if (!branchCode) return null;
+
+    return {
+      BRAND: normBrandValue(col.brand ? row[col.brand] : ''),
+      RECIPE: normBrandValue(col.recipe ? row[col.recipe] : ''),
+      BRANCH_CODE: branchCode,
+      BRANCH_NAME: col.name ? (row[col.name] || '').toString().trim() : '',
+      SIM_NUMBER: col.sim ? (row[col.sim] || '').toString().trim() : '',
+      BOARD_CODE: col.board ? (row[col.board] || '').toString().trim() : '',
+    };
+  }
+
+  function parseFile(file){
+    const reader = new FileReader();
+    reader.onload = async function(e){
+      try{
+        showStatus('Reading file…', 'info');
+        const data = new Uint8Array(e.target.result);
+        const wb = XLSX.read(data, {type:'array'});
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(sheet, {defval:''});
+        if (!rows.length){
+          showStatus('The file has no data rows.', 'err');
+          return;
+        }
+        const headers = Object.keys(rows[0]);
+        const mapped = rows.map(r => mapRow(r, headers)).filter(Boolean);
+        if (!mapped.length){
+          showStatus('Could not find a Store Code3 column, or every row was empty.', 'err');
+          return;
+        }
+        await importRecords(mapped, rows.length);
+      }catch(err){
+        console.error(err);
+        showStatus('Could not read that file: ' + err.message, 'err');
+      }
+    };
+    reader.onerror = function(){ showStatus('Failed to read the file.', 'err'); };
+    reader.readAsArrayBuffer(file);
+  }
+
+  function brandChip(v){
+    return (v === 1 || v === '1') ? '<span class="chip select">ALL SELECT</span>' : '<span class="chip cafe">ALL CAFÉ</span>';
+  }
+
+  function escapeHtml(s){
+    return (s===undefined||s===null?'':s.toString()).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  async function importRecords(records, rowCount){
+    showStatus('Importing…', 'info');
+    try{
+      const res = await fetch(API_BASE + 'import.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(records)
+      });
+      const data = await res.json();
+      if (!res.ok || data.error){
+        throw new Error(data.error || ('Server returned ' + res.status));
+      }
+      const parsedNote = rowCount ? `Parsed ${rowCount} row(s). ` : '';
+      showStatus(`${parsedNote}Imported ${data.ok || 0} record(s)${data.fail ? `, ${data.fail} failed` : ''}.`, data.fail ? 'err' : 'ok');
+    }catch(err){
+      console.error(err);
+      showStatus('Import failed: ' + err.message, 'err');
+    }
+    fileEl.value = '';
+    await loadDatabase();
+  }
+
+  async function loadDatabase(){
+    dbTable.innerHTML = `<tbody><tr><td class="empty">Loading…</td></tr></tbody>`;
+    try{
+      const res = await fetch(API_BASE + 'list.php');
+      if (!res.ok) throw new Error('Server returned ' + res.status);
+      const records = await res.json();
+      if (records.error) throw new Error(records.error);
+      allRecords = records;
+      countEl.textContent = records.length;
+      renderDatabase(records);
+    }catch(err){
+      console.error(err);
+      dbTable.innerHTML = `<tbody><tr><td class="empty">Could not load database: ${escapeHtml(err.message)}</td></tr></tbody>`;
+    }
+  }
+
+  function renderDatabase(records){
+    if (!records.length){
+      dbTable.innerHTML = `<tbody><tr><td class="empty">No records yet — upload a file above to get started.</td></tr></tbody>`;
+      return;
+    }
+    let html = '<thead><tr><th>ID</th><th>Branch Code</th><th>Branch Name</th><th>Brand</th><th>Recipe</th><th>SIM Number</th><th>Board Code</th><th>Created</th><th></th></tr></thead><tbody>';
+    for (const r of records){
+      html += `<tr>
+        <td class="mono">${r.COFFEE_SIM_ID}</td>
+        <td class="mono">${escapeHtml(r.BRANCH_CODE)}</td>
+        <td>${escapeHtml(r.BRANCH_NAME)}</td>
+        <td>${brandChip(r.BRAND)}</td>
+        <td>${brandChip(r.RECIPE)}</td>
+        <td class="mono">${escapeHtml(r.SIM_NUMBER)}</td>
+        <td class="mono">${escapeHtml(r.BOARD_CODE)}</td>
+        <td class="mono">${escapeHtml((r.CREATED_AT||'').toString().slice(0,19).replace('T',' '))}</td>
+        <td><button class="del-btn" data-id="${r.COFFEE_SIM_ID}" title="Delete">✕</button></td>
+      </tr>`;
+    }
+    html += '</tbody>';
+    dbTable.innerHTML = html;
+    dbTable.querySelectorAll('.del-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-id');
+        if (!confirm(`Delete record #${id}?`)) return;
+        try{
+          const res = await fetch(API_BASE + 'delete.php?id=' + encodeURIComponent(id), {method: 'POST'});
+          const data = await res.json();
+          if (!res.ok || data.error) throw new Error(data.error || ('Server returned ' + res.status));
+          await loadDatabase();
+        }catch(e){ alert('Could not delete: ' + e.message); }
+      });
+    });
+  }
+
+  function toCsv(records){
+    const headers = ['COFFEE_SIM_ID','BRANCH_CODE','BRANCH_NAME','BOARD_CODE','BRAND','RECIPE','SIM_NUMBER','CREATED_AT'];
+    const lines = [headers.join(',')];
+    for (const r of records){
+      lines.push(headers.map(h => {
+        const v = (r[h] === undefined || r[h] === null) ? '' : r[h].toString();
+        return '"' + v.replace(/"/g,'""') + '"';
+      }).join(','));
+    }
+    return lines.join('\n');
+  }
+
+  function download(filename, content, mime){
+    const blob = new Blob([content], {type: mime});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  dropEl.addEventListener('click', () => fileEl.click());
+  dropEl.addEventListener('dragover', (e) => { e.preventDefault(); dropEl.classList.add('drag'); });
+  dropEl.addEventListener('dragleave', () => dropEl.classList.remove('drag'));
+  dropEl.addEventListener('drop', (e) => {
+    e.preventDefault(); dropEl.classList.remove('drag');
+    if (e.dataTransfer.files.length) parseFile(e.dataTransfer.files[0]);
+  });
+  fileEl.addEventListener('change', (e) => {
+    if (e.target.files.length) parseFile(e.target.files[0]);
+  });
+  $('#srRefresh').addEventListener('click', loadDatabase);
+  $('#srExportCsv').addEventListener('click', () => download('store_registry.csv', toCsv(allRecords), 'text/csv'));
+  $('#srExportJson').addEventListener('click', () => download('store_registry.json', JSON.stringify(allRecords, null, 2), 'application/json'));
+  searchEl.addEventListener('input', () => {
+    const q = searchEl.value.trim().toLowerCase();
+    if (!q){ renderDatabase(allRecords); return; }
+    const filtered = allRecords.filter(r =>
+      Object.values(r).some(v => (v||'').toString().toLowerCase().includes(q))
+    );
+    renderDatabase(filtered);
+  });
+
+  loadDatabase();
+})();
+</script>
